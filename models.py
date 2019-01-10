@@ -4,7 +4,7 @@ from sqlalchemy.orm import (scoped_session, sessionmaker,
                             backref, relationship)
 from sqlalchemy import (Column, DateTime, ForeignKey,
 						Integer, String, Boolean, Float,
-						func)
+						func, BigInteger)
 
 from settings import psql
 

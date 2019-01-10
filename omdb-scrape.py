@@ -47,7 +47,7 @@ class OMDB_Scraper:
         return datetime.strptime(date_str, "%d %b %Y")
 
     def dvd_release_date_format(self, dvd_date_str):
-        if dvd_date_str == 'N/A': return nan
+        if dvd_date_str == 'N/A': return None
         else:
             return datetime.strptime(dvd_date_str, "%d %b %Y")
 
@@ -58,14 +58,14 @@ class OMDB_Scraper:
         for rating in ratings_list:
             if rating["Source"] == 'Rotten Tomatoes': 
                 return rating["Value"].replace('%', '')
-        return nan
+        return None
 
     def meta_rating(self, rating_str):
-        if rating_str == 'N/A': return nan
+        if rating_str == 'N/A': return None
         else: return int(rating_str)
 
     def imdb_rating(self, rating_str):
-        if rating_str == 'N/A': return nan
+        if rating_str == 'N/A': return None
         else: return float(rating_str)
 
     def get_genres(self, genre_str):
@@ -91,7 +91,7 @@ class OMDB_Scraper:
         return countries
 
     def box_office_format(self, box_office_str):
-        if box_office_str == "N/A": return nan
+        if box_office_str == "N/A": return None
         else:
             box_office = box_office_str.replace(',','')
             box_office = box_office.replace('$', '')
@@ -192,7 +192,7 @@ class OMDB_Scraper:
                     
                         self.session.add(film_omdb)
                         print("Collected data for {}".format(title))
-                        time.sleep(1)
+                        time.sleep(0.5)
                     else:
                         print("WARNING! Could not find data for {}".format(title))
 
