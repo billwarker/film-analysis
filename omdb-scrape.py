@@ -41,11 +41,13 @@ class OMDB_Scraper:
         json_response = json.loads(json_str)
         return json_response
 
+    ### functions for parsing json 
+
     def release_date_format(self, date_str):
         return datetime.strptime(date_str, "%d %b %Y")
 
     def dvd_release_date_format(self, dvd_date_str):
-        if dvd_date_str == 'N/A': return None
+        if dvd_date_str == 'N/A': return nan
         else:
             return datetime.strptime(dvd_date_str, "%d %b %Y")
 
@@ -56,14 +58,14 @@ class OMDB_Scraper:
         for rating in ratings_list:
             if rating["Source"] == 'Rotten Tomatoes': 
                 return rating["Value"].replace('%', '')
-        return None
+        return nan
 
     def meta_rating(self, rating_str):
-        if rating_str == 'N/A': return None
+        if rating_str == 'N/A': return nan
         else: return int(rating_str)
 
     def imdb_rating(self, rating_str):
-        if rating_str == 'N/A': return None
+        if rating_str == 'N/A': return nan
         else: return float(rating_str)
 
     def get_genres(self, genre_str):
@@ -80,8 +82,16 @@ class OMDB_Scraper:
             languages.append(nan)
         return languages
 
+    def get_countries(self, countries_str):
+        countries = countries_str.split(", ")
+        if len(countries) > 5:
+            countries = countries[:5]
+        while len(countries) < 5:
+            countries.append(nan)
+        return countries
+
     def box_office_format(self, box_office_str):
-        if box_office_str == "N/A": return None
+        if box_office_str == "N/A": return nan
         else:
             box_office = box_office_str.replace(',','')
             box_office = box_office.replace('$', '')
@@ -116,8 +126,12 @@ class OMDB_Scraper:
 
         return awards_dict
     
+    ### commit to db
+
     def commit(self):
         self.session.commit()
+
+    ### main scraping function    
 
     def scrape_omdb(self, film_dict):
         years = list(film_dict.keys())
@@ -132,6 +146,7 @@ class OMDB_Scraper:
 
                         genres = self.get_genres(data["Genre"])
                         languages = self.get_languages(data["Language"])
+                        countries = self.get_countries(data["Country"])
                         awards = self.get_awards(data["Awards"])
                         
                         film_omdb = FilmsOMDB(
@@ -154,6 +169,12 @@ class OMDB_Scraper:
                             language_3 = languages[2],
                             language_4 = languages[3],
                             language_5 = languages[4],
+
+                            country_1 = countries[0],
+                            country_2 = countries[1],
+                            country_3 = countries[2],
+                            country_4 = countries[3],
+                            country_5 = countries[4],
 
                             oscar_wins = awards["oscar_wins"],
                             oscar_noms = awards["oscar_noms"],
@@ -179,7 +200,7 @@ class OMDB_Scraper:
                     print("WARNING! Something didn't work with {}".format(title))
                     print(e)
             
-            print('Commiting all {} films to database...')
+            print('Commiting {} films to database...'.format(year))
             self.commit()      
             print('\n')
 

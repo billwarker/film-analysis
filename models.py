@@ -14,6 +14,7 @@ engine = create_engine('postgresql://{}:{}@{}:{}/{}'.format(
 						psql['database']))
 
 Base = declarative_base()
+Base.metadata.bind = engine
 
 class FilmsOMDB(Base):
     __tablename__ = 'films_omdb'
@@ -41,6 +42,12 @@ class FilmsOMDB(Base):
     language_3 = Column(String)
     language_4 = Column(String)
     language_5 = Column(String)
+
+    country_1 = Column(String)
+    country_2 = Column(String)
+    country_3 = Column(String)
+    country_4 = Column(String)
+    country_5 = Column(String)
 
     oscar_wins = Column(Integer)
     oscar_noms = Column(Integer)
@@ -80,5 +87,14 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    print("Creating database")
-    init_db()
+    response = input("Drop all tables? [y]")
+    if response == 'y':
+        FilmsOMDB.__table__.drop()
+        FilmsWiki.__table__.drop()
+        PeopleByFilm.__table__.drop()
+        People.__table__.drop()
+    
+    reponse = input("Create all tables? [y]")
+    if reponse == 'y':
+        print("Creating database")
+        init_db()
