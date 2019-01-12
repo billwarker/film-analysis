@@ -5,6 +5,18 @@ import requests
 import re
 import time
 
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import (scoped_session, sessionmaker,
+                            backref, relationship)
+
+from models import (FilmsWiki, Persons, FilmPersons, Countries,
+                    FilmCountries, Companies, FilmCompanies,
+                    Languages, FilmLanguages, Genres,
+                    FilmGenres)
+
+from settings import psql
+
 
 def parse_yearly_film_hrefs(year):
     url = "https://en.wikipedia.org/wiki/{}_in_film".format(year)
@@ -49,14 +61,14 @@ infobox_attrs = {
     "Story by": "Story",
     "Country": "Country",
     "Productioncompany": "Production",
-    "Starring": "Starring",
+    "Starring": "Actor",
     "Directed by": "Director",
     "Narrated by": "Narrator",
     "Written by": "Writer",
     "Running time": "Running Time",
     "Language": "Language",
     "Box office": "Box Office",
-    "Distributed by": "Distributor",
+    "Distributed by": "Distribution",
     "Screenplay by": "Screenwriter",
     "Productioncompanies": "Production"
     }
@@ -127,11 +139,109 @@ def scrape_film_infobox(html_soup):
     except Exception as e:
         print(e)
 
-hrefs_2018 = parse_yearly_film_hrefs(2018)
-for href in hrefs_2018[:50]:
-    film_page = redirect_to_film_page(href)
-    data = scrape_film_infobox(film_page)
-    print(data)
-    print("\n")
-    time.sleep(0.5)
+def main():
+    engine = create_engine('postgresql://{}:{}@{}:{}/{}'.format(
+						psql['user'], psql['password'],
+						psql['host'], psql['port'],
+						psql['database']))
+    
+    Base = declarative_base()
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    year_hrefs = parse_yearly_film_hrefs(2017)
+    for href in year_hrefs:
+        film_page = redirect_to_film_page(href)
+        data = scrape_film_infobox(film_page)
+        
+        # load films_wiki
+
+        film_obj = FilmsWiki(
+            title = data["Title"],
+            released = data["Released"],
+            based_on = data["Source Material"],
+            running_time = data["Running Time"],
+            budget = data["Budget"],
+            box_office = data["Box Office"],
+            )
+        session.add(film_obj)
+
+        # load persons and film_persons
+        roles = ["Actor", "Director", "Writer", "Screenwriter",
+                 "Editor", "Producer", "Composer", "Narrator",
+                 "Story"]
+
+        for role in roles:
+            if data[role]:
+                persons = data[role]
+                
+                # if single person, make list
+                if type(persons) != list: 
+                    persons = [persons] 
+
+                for name in persons:
+                    person_obj = Persons(
+                        full_name = name
+                        )
+                    film_person_obj = FilmPersons(
+                        film = film_obj,
+                        person = person_obj,
+                        role = role
+                        )
+                    session.add(film_person_obj)
+        
+        # load countries and film_counries
+        if data["Country"]:
+            countries = data["Country"]
+            
+            # if single country, make list
+            if type(countries) != list:
+                countries = [countries]
+            for country in countries:
+                country_obj = Countries(
+                    country = country
+                    )
+                film_country_obj = FilmCountries(
+                    film = film_obj,
+                    country = country_obj
+                    )
+                session.add(film_country_obj)
+
+        # load companies and film_companies
+        roles = ["Production", "Distribution"]
+        for role in roles:
+            if data[role]:
+                companies = data[role]
+
+                # if single company, make list
+                if type(companies) != list:
+                    companies = [companies]
+
+                for company in companies:
+                    company_obj = Companies(
+                        company = company
+                        )
+                    film_company_obj = FilmCompanies(
+                        film = film_obj,
+                        company = company_obj,
+                        role = role
+                    )
+                    session.add(film_company_obj)
+
+        # load languages and film_languages
+        if data["Language"]:
+            languages = data["Language"]
+            
+            # if single language, make list
+            if type(languages) != list:
+                languages = [languages]
+            for language in languages:
+                language_obj = Languages(
+                    language = language
+                    )
+                film_language_obj = FilmLanguages(
+                    film = film_obj,
+                    language = language_obj
+                    )
+                session.add(film_language_obj)
+    session.commit()
 

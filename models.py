@@ -62,37 +62,152 @@ class FilmsOMDB(Base):
     box_office = Column(Integer)
     production = Column(String)
 
+### wikipedia core
+
 class FilmsWiki(Base):
     __tablename__ = 'films_wiki'
 
     id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    released = Column(DateTime, nullable=False)
+    based_on = Column(String)
+    story_by = Column(String)
+    running_time = Column(Integer)
+    budget = Column(Integer)
+    box_office = Column(Integer)
+    
+    people = relationship(
+        "Persons",
+        secondary="film_persons"
+    )
 
+    countries = relationship(
+        "Countries",
+        secondary="film_countries"
+    )
 
-class PeopleByFilm(Base):
-    __tablename__ = 'people_by_film'
+    companies = relationship(
+        "Companies",
+        secondary="film_companies"
+    )
+
+    languages = relationship(
+        "Languages",
+        secondary="film_languages"
+    )
+
+class Persons(Base):
+    __tablename__ = 'persons'
 
     id = Column(Integer, primary_key=True)
+    full_name = Column(String)
+    films = relationship(
+        "FilmsWiki",
+        secondary="film_persons"
+        )
 
+class FilmPersons(Base):
+    
+    __tablename__ = 'film_persons'
     # people by film
-    film_title = Column(String)
-    person = Column(String)
-    role = Column(String)
+    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_link"))
+    person_id = Column(Integer, ForeignKey('persons.id'), primary_key=True)
+    person = relationship("Persons", backref=backref("person_link"))
+    role = Column(String, primary_key=True)
 
-class People(Base):
-    __tablename__ = 'people'
+class Countries(Base):
 
+    __tablename__ = 'countries'
     id = Column(Integer, primary_key=True)
+    country = Column(String)
+    films = relationship(
+        FilmsWiki,
+        secondary="film_countries"
+        )
+
+class FilmCountries(Base):
+
+    __tablename__ = 'film_countries'
+    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_link"))
+    country_id = Column(Integer, ForeignKey('countries.id'), primary_key=True)
+    country = relationship("Countries", backref=backref("country_link"))
+
+class Companies(Base):
+
+    __tablename__ = 'companies'
+    id = Column(Integer, primary_key=True)
+    company = Column(String, nullable=False)
+    films = relationship(
+        FilmsWiki,
+        secondary="film_companies"
+        )
+
+class FilmCompanies(Base):
+
+    __tablename__ = 'film_companies'
+    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_link"))
+    company_id = Column(Integer, ForeignKey('companies.id'), primary_key=True)
+    company = relationship("Companies", backref=backref("company_link"))
+    role = Column(String, primary_key=True)
+
+class Languages(Base):
+
+    __tablename__ = 'languages'
+    id = Column(Integer, primary_key=True)
+    language = Column(String)
+    films = relationship(
+        FilmsWiki,
+        secondary="film_languages"
+    )
+
+class FilmLanguages(Base):
+
+    __tablename__ = 'film_languages'
+    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_link"))
+    language_id = Column(Integer, ForeignKey('languages.id'), primary_key=True)
+    language = relationship("Languages", backref=backref("language_link"))
+
+class Genres(Base):
+
+    __tablename__ = 'genres'
+    id = Column(Integer, primary_key=True)
+    genre = Column(String)
+    films = relationship(
+        FilmsWiki,
+        secondary="film_genres"
+    )
+
+class FilmGenres(Base):
+
+    __tablename__ = 'film_genres'
+    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_link"))
+    genre_id = Column(Integer, ForeignKey('genres.id'), primary_key=True)
+    genre = relationship("Genres", backref=backref("genre_link"))
 
 def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
+    init_db()
     response = input("Drop all tables? [y]")
     if response == 'y':
-        FilmsOMDB.__table__.drop()
-        FilmsWiki.__table__.drop()
-        PeopleByFilm.__table__.drop()
-        People.__table__.drop()
+        #FilmsOMDB.__table__.drop()
+        for table in Base.metadata.tables.keys():
+            engine.execute("DROP TABLE %s CASCADE;" % table)
+        # FilmsWiki.__table__.drop()
+        # FilmPersons.__table__.drop()
+        # Persons.__table__.drop()
+        # FilmCountries.__table__.drop()
+        # Countries.__table__.drop()
+        # FilmCompanies.__table__.drop()
+        # Companies.__table__.drop()
+        # FilmLanguages.__table__.drop()
+        # Languages.__table__.drop()
     
     reponse = input("Create all tables? [y]")
     if reponse == 'y':
