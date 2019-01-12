@@ -69,14 +69,13 @@ class FilmsWiki(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
-    released = Column(DateTime, nullable=False)
+    released = Column(DateTime)
     based_on = Column(String)
-    story_by = Column(String)
     running_time = Column(Integer)
     budget = Column(Integer)
     box_office = Column(Integer)
     
-    people = relationship(
+    persons = relationship(
         "Persons",
         secondary="film_persons"
     )
@@ -111,9 +110,9 @@ class FilmPersons(Base):
     __tablename__ = 'film_persons'
     # people by film
     film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_link"))
+    film = relationship("FilmsWiki", backref=backref("film_person"))
     person_id = Column(Integer, ForeignKey('persons.id'), primary_key=True)
-    person = relationship("Persons", backref=backref("person_link"))
+    person = relationship("Persons", backref=backref("person_film"))
     role = Column(String, primary_key=True)
 
 class Countries(Base):
@@ -122,7 +121,7 @@ class Countries(Base):
     id = Column(Integer, primary_key=True)
     country = Column(String)
     films = relationship(
-        FilmsWiki,
+        "FilmsWiki",
         secondary="film_countries"
         )
 
@@ -130,9 +129,9 @@ class FilmCountries(Base):
 
     __tablename__ = 'film_countries'
     film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_link"))
+    film = relationship("FilmsWiki", backref=backref("film_country"))
     country_id = Column(Integer, ForeignKey('countries.id'), primary_key=True)
-    country = relationship("Countries", backref=backref("country_link"))
+    country = relationship("Countries", backref=backref("country_film"))
 
 class Companies(Base):
 
@@ -140,7 +139,7 @@ class Companies(Base):
     id = Column(Integer, primary_key=True)
     company = Column(String, nullable=False)
     films = relationship(
-        FilmsWiki,
+        "FilmsWiki",
         secondary="film_companies"
         )
 
@@ -148,9 +147,9 @@ class FilmCompanies(Base):
 
     __tablename__ = 'film_companies'
     film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_link"))
+    film = relationship("FilmsWiki", backref=backref("film_company"))
     company_id = Column(Integer, ForeignKey('companies.id'), primary_key=True)
-    company = relationship("Companies", backref=backref("company_link"))
+    company = relationship("Companies", backref=backref("company_film"))
     role = Column(String, primary_key=True)
 
 class Languages(Base):
@@ -159,7 +158,7 @@ class Languages(Base):
     id = Column(Integer, primary_key=True)
     language = Column(String)
     films = relationship(
-        FilmsWiki,
+        "FilmsWiki",
         secondary="film_languages"
     )
 
@@ -167,9 +166,9 @@ class FilmLanguages(Base):
 
     __tablename__ = 'film_languages'
     film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_link"))
+    film = relationship("FilmsWiki", backref=backref("film_language"))
     language_id = Column(Integer, ForeignKey('languages.id'), primary_key=True)
-    language = relationship("Languages", backref=backref("language_link"))
+    language = relationship("Languages", backref=backref("language_film"))
 
 class Genres(Base):
 
@@ -177,7 +176,7 @@ class Genres(Base):
     id = Column(Integer, primary_key=True)
     genre = Column(String)
     films = relationship(
-        FilmsWiki,
+        "FilmsWiki",
         secondary="film_genres"
     )
 
@@ -185,29 +184,19 @@ class FilmGenres(Base):
 
     __tablename__ = 'film_genres'
     film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_link"))
+    film = relationship("FilmsWiki", backref=backref("film_genre"))
     genre_id = Column(Integer, ForeignKey('genres.id'), primary_key=True)
-    genre = relationship("Genres", backref=backref("genre_link"))
+    genre = relationship("Genres", backref=backref("genre_film"))
 
 def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    init_db()
+    #init_db()
     response = input("Drop all tables? [y]")
     if response == 'y':
-        #FilmsOMDB.__table__.drop()
         for table in Base.metadata.tables.keys():
             engine.execute("DROP TABLE %s CASCADE;" % table)
-        # FilmsWiki.__table__.drop()
-        # FilmPersons.__table__.drop()
-        # Persons.__table__.drop()
-        # FilmCountries.__table__.drop()
-        # Countries.__table__.drop()
-        # FilmCompanies.__table__.drop()
-        # Companies.__table__.drop()
-        # FilmLanguages.__table__.drop()
-        # Languages.__table__.drop()
     
     reponse = input("Create all tables? [y]")
     if reponse == 'y':
