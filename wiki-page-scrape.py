@@ -265,15 +265,15 @@ class WikiFilmScrape:
                             except Exception:
                                 self.session.rollback()
 
-                    try:       
-                        film_country_obj = FilmCountries(
-                            film = film_obj,
-                            country = country_obj
-                            )
-                        self.session.add(film_country_obj)
-                        self.session.flush()
-                    except Exception:
-                        self.session.rollback()
+                        try:       
+                            film_country_obj = FilmCountries(
+                                film = film_obj,
+                                country = country_obj
+                                )
+                            self.session.add(film_country_obj)
+                            self.session.flush()
+                        except Exception:
+                            self.session.rollback()
 
                 # 4. load companies and film_companies
                 for role in self.company_roles:
@@ -355,7 +355,6 @@ class WikiFilmScrape:
 if __name__ == "__main__":
     s = WikiFilmScrape(psql)
     s.main()
-    print('yeet')
 
 
 

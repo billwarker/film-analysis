@@ -188,26 +188,13 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    #init_db()
-    response = input("Drop all tables? [y]")
-    if response == 'y':
-        response2 = input("Are you sure? [yes]")
-        if response2 == 'yes':
-            for table in Base.metadata.tables.keys():
-                engine.execute("DROP TABLE %s CASCADE;" % table)
-                print("Dropped {}".format(table))
-            sys.exit()
-                
-
-    response = input("Drop OMDB table?")
-    if response == 'y':
-        FilmsOMDB.__table__.drop()
-        print("Dropped OMDB")
-
-    response = input("Drop Films table?")
-    if response == 'y':
-        Films.__table__.drop()
-        print("Dropped Films")
+    
+    init_db()
+    for table in Base.metadata.tables.keys():
+        response = input("Drop {}? [y]".format(table))
+        if response == 'y':
+            engine.execute("DROP TABLE %s CASCADE;" % table)
+            print("Dropped {}".format(table))
     
     reponse = input("Create all tables? [y]")
     if reponse == 'y':
