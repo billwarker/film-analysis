@@ -5,8 +5,10 @@ from sqlalchemy.orm import (scoped_session, sessionmaker,
 from sqlalchemy import (Column, DateTime, ForeignKey,
 						Integer, String, Boolean, Float,
 						func, BigInteger)
+from sqlalchemy import UniqueConstraint
 
 from settings import psql
+import sys
 
 engine = create_engine('postgresql://{}:{}@{}:{}/{}'.format(
 						psql['user'], psql['password'],
@@ -19,7 +21,7 @@ Base.metadata.bind = engine
 class Films(Base):
     __tablename__ = 'films'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, unique=True, autoincrement=True)
     title = Column(String, primary_key=True)
     wiki_href = Column(String)
 
@@ -60,10 +62,11 @@ class FilmsOMDB(Base):
 class FilmsWiki(Base):
     __tablename__ = 'films_wiki'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, ForeignKey('films.id'), primary_key=True)
+    film = relationship("Films", backref=backref("film_id"))
+
     title = Column(String, nullable=False)
     released = Column(DateTime)
-    based_on = Column(String)
     running_time = Column(Integer)
     budget = Column(Integer)
     box_office = Column(Integer)
@@ -185,13 +188,16 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    init_db()
+    #init_db()
     response = input("Drop all tables? [y]")
     if response == 'y':
         response2 = input("Are you sure? [yes]")
-        if response == 'yes':
+        if response2 == 'yes':
             for table in Base.metadata.tables.keys():
                 engine.execute("DROP TABLE %s CASCADE;" % table)
+                print("Dropped {}".format(table))
+            sys.exit()
+                
 
     response = input("Drop OMDB table?")
     if response == 'y':
