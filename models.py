@@ -29,25 +29,12 @@ class FilmsOMDB(Base):
     released = Column(DateTime)
     runtime = Column(Integer)
     
-    genre_1 = Column(String)
-    genre_2 = Column(String)
-    genre_3 = Column(String)
-    genre_4 = Column(String)
-    genre_5 = Column(String)
+    genres = relationship(
+        "Genres",
+        secondary="film_genres"
+    )
 
     plot = Column(String)
-
-    language_1 = Column(String)
-    language_2 = Column(String)
-    language_3 = Column(String)
-    language_4 = Column(String)
-    language_5 = Column(String)
-
-    country_1 = Column(String)
-    country_2 = Column(String)
-    country_3 = Column(String)
-    country_4 = Column(String)
-    country_5 = Column(String)
 
     oscar_wins = Column(Integer)
     oscar_noms = Column(Integer)
@@ -60,7 +47,6 @@ class FilmsOMDB(Base):
 
     dvd_release = Column(DateTime)
     box_office = Column(Integer)
-    production = Column(String)
 
 ### wikipedia core
 
@@ -160,7 +146,7 @@ class Languages(Base):
     films = relationship(
         "FilmsWiki",
         secondary="film_languages"
-    )
+        )
 
 class FilmLanguages(Base):
 
@@ -176,15 +162,15 @@ class Genres(Base):
     id = Column(Integer, primary_key=True)
     genre = Column(String)
     films = relationship(
-        "FilmsWiki",
+        "FilmsOMDB",
         secondary="film_genres"
-    )
+        )
 
 class FilmGenres(Base):
 
     __tablename__ = 'film_genres'
-    film_id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
-    film = relationship("FilmsWiki", backref=backref("film_genre"))
+    film_id = Column(Integer, ForeignKey('films_omdb.id'), primary_key=True)
+    film = relationship("FilmsOMDB", backref=backref("film_genre"))
     genre_id = Column(Integer, ForeignKey('genres.id'), primary_key=True)
     genre = relationship("Genres", backref=backref("genre_film"))
 
@@ -192,11 +178,18 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    #init_db()
+    init_db()
     response = input("Drop all tables? [y]")
     if response == 'y':
-        for table in Base.metadata.tables.keys():
-            engine.execute("DROP TABLE %s CASCADE;" % table)
+        response2 = input("Are you sure? [yes]")
+        if response == 'yes':
+            for table in Base.metadata.tables.keys():
+                engine.execute("DROP TABLE %s CASCADE;" % table)
+
+    response = input("Drop OMDB table?")
+    if response == 'y':
+        FilmsOMDB.__table__.drop()
+        print("Dropped OMDB")
     
     reponse = input("Create all tables? [y]")
     if reponse == 'y':

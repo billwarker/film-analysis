@@ -11,7 +11,7 @@ from numpy import nan
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from models import FilmsOMDB
+from models import FilmsOMDB, Genres, FilmGenres
 
 from settings import psql, api_key
 
@@ -70,25 +70,26 @@ class OMDB_Scraper:
 
     def get_genres(self, genre_str):
         genres = genre_str.split(", ")
-        while len(genres) < 5:
-            genres.append(nan)
-        return genres
+        if type(genres) == list:
+            return genres
 
-    def get_languages(self, language_str):
-        languages = language_str.split(", ")
-        if len(languages) > 5:
-            languages = languages[:5]
-        while len(languages) < 5:
-            languages.append(nan)
-        return languages
+        return [genres]
 
-    def get_countries(self, countries_str):
-        countries = countries_str.split(", ")
-        if len(countries) > 5:
-            countries = countries[:5]
-        while len(countries) < 5:
-            countries.append(nan)
-        return countries
+    # def get_languages(self, language_str):
+    #     languages = language_str.split(", ")
+    #     if len(languages) > 5:
+    #         languages = languages[:5]
+    #     while len(languages) < 5:
+    #         languages.append(nan)
+    #     return languages
+
+    # def get_countries(self, countries_str):
+    #     countries = countries_str.split(", ")
+    #     if len(countries) > 5:
+    #         countries = countries[:5]
+    #     while len(countries) < 5:
+    #         countries.append(nan)
+    #     return countries
 
     def box_office_format(self, box_office_str):
         if box_office_str == "N/A": return None
@@ -145,36 +146,18 @@ class OMDB_Scraper:
                     if data["Response"] == "True":
 
                         genres = self.get_genres(data["Genre"])
-                        languages = self.get_languages(data["Language"])
-                        countries = self.get_countries(data["Country"])
+                        # languages = self.get_languages(data["Language"])
+                        # countries = self.get_countries(data["Country"])
                         awards = self.get_awards(data["Awards"])
                         
-                        film_omdb = FilmsOMDB(
+                        film_omdb_obj = FilmsOMDB(
                             title = data["Title"],
                             year = int(data["Year"]),
                             rated = data["Rated"],
                             released = self.release_date_format(data["Released"]),
                             runtime = self.runtime_format(data["Runtime"]),
 
-                            genre_1 = genres[0],
-                            genre_2 = genres[1],
-                            genre_3 = genres[2],
-                            genre_4 = genres[3],
-                            genre_5 = genres[4],
-
                             plot = data["Plot"],
-
-                            language_1 = languages[0],
-                            language_2 = languages[1],
-                            language_3 = languages[2],
-                            language_4 = languages[3],
-                            language_5 = languages[4],
-
-                            country_1 = countries[0],
-                            country_2 = countries[1],
-                            country_3 = countries[2],
-                            country_4 = countries[3],
-                            country_5 = countries[4],
 
                             oscar_wins = awards["oscar_wins"],
                             oscar_noms = awards["oscar_noms"],
@@ -187,12 +170,40 @@ class OMDB_Scraper:
                             
                             dvd_release = self.dvd_release_date_format(data["DVD"]),
                             box_office = self.box_office_format(data["BoxOffice"]),
-                            production = data["Production"]
-                        )
-                    
-                        self.session.add(film_omdb)
+                            )
+                        self.session.add(film_omdb_obj)
+                        self.session.flush()
+                        
+                        for genre in genres:
+                            try:
+                                existing_genre = self.session.query(Genres).\
+                                                 filter_by(genre=genre).one()
+                                genre_obj = existing_genre
+                            except Exception:
+                                try:
+                                    genre_obj = Genres(
+                                        genre=genre
+                                    )
+                                    self.session.add(genre_obj)
+                                    self.session.flush()
+                                
+                                except Exception:
+                                    self.session.rollback()
+                            try:
+                                film_genre_obj = FilmGenres(
+                                    film = film_omdb_obj,
+                                    genre = genre_obj
+                                )
+                                self.session.add(film_genre_obj)
+                                self.session.flush()
+
+                            except Exception:
+                                self.session.rollback()
+
+
                         print("Collected data for {}".format(title))
                         time.sleep(0.5)
+                        self.session.commit()
                     else:
                         print("WARNING! Could not find data for {}".format(title))
 
