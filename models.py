@@ -184,6 +184,12 @@ class FilmGenres(Base):
     genre_id = Column(Integer, ForeignKey('genres.id'), primary_key=True)
     genre = relationship("Genres", backref=backref("genre_film"))
 
+class HolidaysUSA(Base):
+
+    __tablename__ = 'usa_holidays'
+    date = Column(DateTime, primary_key=True)
+    holiday = Column(String, primary_key=True)
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
