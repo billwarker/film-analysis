@@ -11,7 +11,7 @@ from numpy import nan
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from models import FilmsOMDB, Genres, FilmGenres
+from models import Films, FilmsOMDB, Genres, FilmGenres
 
 from settings import psql, api_key
 
@@ -134,90 +134,83 @@ class OMDB_Scraper:
 
     ### main scraping function    
 
-    def scrape_omdb(self, film_dict):
-        years = list(film_dict.keys())
-        for year in years:
-            films = film_dict[year]
-            print("Scraping the OMDB for all films released in {}\n".format(year))
-            for title in films:
-                try:
-                    api_call = self.create_api_call(title)
-                    data = self.get_json_response(api_call)
-                    if data["Response"] == "True":
+    def scrape_omdb(self):
+        
+        all_films = self.session.query(Films)
+        for film in all_films:
+            try:
+                api_call = self.create_api_call(film.title)
+                film_data = self.get_json_response(api_call)
+                if film_data["Response"] == "True":
 
-                        genres = self.get_genres(data["Genre"])
-                        # languages = self.get_languages(data["Language"])
-                        # countries = self.get_countries(data["Country"])
-                        awards = self.get_awards(data["Awards"])
+                    genres = self.get_genres(film_data["Genre"])
+                    # languages = self.get_languages(data["Language"])
+                    # countries = self.get_countries(data["Country"])
+                    awards = self.get_awards(film_data["Awards"])
+                    
+                    film_omdb_obj = FilmsOMDB(
+
+                        film = film,
+                        title = film_data["Title"],
+                        year = int(film_data["Year"]),
+                        rated = film_data["Rated"],
+                        released = self.release_date_format(film_data["Released"]),
+                        runtime = self.runtime_format(film_data["Runtime"]),
+
+                        plot = film_data["Plot"],
+
+                        oscar_wins = awards["oscar_wins"],
+                        oscar_noms = awards["oscar_noms"],
+                        award_wins = awards["award_wins"],
+                        award_noms = awards["award_noms"],
+
+                        ratings_tomatoes = self.tomato_rating(film_data["Ratings"]),
+                        ratings_meta = self.meta_rating(film_data["Metascore"]),
+                        ratings_imdb = self.imdb_rating(film_data["imdbRating"]),
                         
-                        film_omdb_obj = FilmsOMDB(
-                            title = data["Title"],
-                            year = int(data["Year"]),
-                            rated = data["Rated"],
-                            released = self.release_date_format(data["Released"]),
-                            runtime = self.runtime_format(data["Runtime"]),
-
-                            plot = data["Plot"],
-
-                            oscar_wins = awards["oscar_wins"],
-                            oscar_noms = awards["oscar_noms"],
-                            award_wins = awards["award_wins"],
-                            award_noms = awards["award_noms"],
-
-                            ratings_tomatoes = self.tomato_rating(data["Ratings"]),
-                            ratings_meta = self.meta_rating(data["Metascore"]),
-                            ratings_imdb = self.imdb_rating(data["imdbRating"]),
-                            
-                            dvd_release = self.dvd_release_date_format(data["DVD"]),
-                            box_office = self.box_office_format(data["BoxOffice"]),
-                            )
-                        self.session.add(film_omdb_obj)
-                        self.session.flush()
-                        
-                        for genre in genres:
+                        dvd_release = self.dvd_release_date_format(film_data["DVD"]),
+                        box_office = self.box_office_format(film_data["BoxOffice"]),
+                        )
+                    self.session.add(film_omdb_obj)
+                    self.session.flush()
+                    
+                    for genre in genres:
+                        try:
+                            existing_genre = self.session.query(Genres).\
+                                                filter_by(genre=genre).one()
+                            genre_obj = existing_genre
+                        except Exception:
                             try:
-                                existing_genre = self.session.query(Genres).\
-                                                 filter_by(genre=genre).one()
-                                genre_obj = existing_genre
-                            except Exception:
-                                try:
-                                    genre_obj = Genres(
-                                        genre=genre
-                                    )
-                                    self.session.add(genre_obj)
-                                    self.session.flush()
-                                
-                                except Exception:
-                                    self.session.rollback()
-                            try:
-                                film_genre_obj = FilmGenres(
-                                    film = film_omdb_obj,
-                                    genre = genre_obj
+                                genre_obj = Genres(
+                                    genre=genre
                                 )
-                                self.session.add(film_genre_obj)
+                                self.session.add(genre_obj)
                                 self.session.flush()
-
+                            
                             except Exception:
                                 self.session.rollback()
+                        try:
+                            film_genre_obj = FilmGenres(
+                                film = film_omdb_obj,
+                                genre = genre_obj
+                            )
+                            self.session.add(film_genre_obj)
+                            self.session.flush()
+
+                        except Exception:
+                            self.session.rollback()
 
 
-                        print("Collected data for {}".format(title))
-                        time.sleep(0.5)
-                        self.session.commit()
-                    else:
-                        print("WARNING! Could not find data for {}".format(title))
+                    print("Collected data for {}".format(film.title))
+                    time.sleep(0.5)
+                    self.session.commit()
+                else:
+                    print("WARNING! Could not find data for {}".format(film.title))
 
-                except Exception as e:
-                    print("WARNING! Something didn't work with {}".format(title))
-                    print(e)
-            
-            print('Commiting {} films to database...'.format(year))
-            self.commit()      
-            print('\n')
-
-
+            except Exception as e:
+                print("WARNING! Something didn't work with {}".format(film.title))
+                print(e)
+        
 if __name__ == "__main__":
-    film_dict = pickle.load(open("films.p", "rb"))
     scraper = OMDB_Scraper(psql, api_key)
-    scraper.scrape_omdb(film_dict)
-    scraper.commit()
+    scraper.scrape_omdb()
