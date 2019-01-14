@@ -355,20 +355,3 @@ class WikiFilmScrape:
 if __name__ == "__main__":
     s = WikiFilmScrape(psql)
     s.main()
-
-
-
-# def load_fields_and_associations(data, Model, Association, roles=None):
-#     if roles:
-#         for role in roles:
-#             if data[role]:
-#                 data_obj = data[role]
-            
-#             # if single object, make list
-#             if type(data_obj) != list:
-#                 data_obj = [data_obj]
-            
-#             for key in data_obj:
-#                 try:
-#                     already_exists = session.query(Model).\
-#                                      filter_by(Model.__table__.columns[1] = key)
