@@ -193,15 +193,19 @@ class HolidaysUSA(Base):
 class MojoSummary(Base):
 
     __tablename__ = 'mojo_summary'
-    id = Column(Integer, ForeignKey('films.id'), primary_key=True)
+    id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_mojo"))
     domestic_gross = Column(Integer)
     foreign_gross = Column(Integer)
+    budget = Column(Integer)
+
 
 class MojoDaily(Base):
 
     __tablename__ = 'mojo_daily'
     date = Column(DateTime, primary_key=True)
-    film_id = Column(Integer, ForeignKey('mojo_summary.id'), primary_key=True)
+    id = Column(Integer, ForeignKey('films_wiki.id'), primary_key=True)
+    film = relationship("FilmsWiki", backref=backref("film_daily"))
 
     day = Column(String)
     rank = Column(Integer)
