@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import (scoped_session, sessionmaker)
 from settings import psql
 
-f = open("holidays.txt")
+f = open("holidays 2010-2018.txt")
 
 pattern = re.compile(r"([A-Za-z]+ [0-9]+)\t([\w() '\.]+)")
 
